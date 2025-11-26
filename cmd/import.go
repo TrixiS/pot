@@ -28,9 +28,7 @@ type Connection struct {
 }
 
 func runImport(cmd *cobra.Command, args []string) error {
-	mantraDBFilepath := args[0]
-
-	mantraDB, err := storm.Open(mantraDBFilepath)
+	mantraDB, err := storm.Open(args[0])
 
 	if err != nil {
 		return err
