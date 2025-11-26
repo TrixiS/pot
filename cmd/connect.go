@@ -30,9 +30,8 @@ var termModes = ssh.TerminalModes{
 
 func runConnect(cmd *cobra.Command, args []string) error {
 	db := dbconn.New()
-	defer db.Close()
-
 	conn, err := getConnectionByIDString(db, args[0])
+	db.Close()
 
 	if err != nil {
 		return err
