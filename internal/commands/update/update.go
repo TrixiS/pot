@@ -58,11 +58,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	queryItem.SetReturnData(true)
 
 	updateItem := keychain.NewItem()
-	queryItem.SetSecClass(keychain.SecClassGenericPassword)
-	queryItem.SetService(kc.ServiceName)
-	queryItem.SetAccount(conn.Host)
-	queryItem.SetLabel(conn.User)
-	queryItem.SetAccessGroup(kc.AccessGroup)
+	updateItem.SetSecClass(keychain.SecClassGenericPassword)
+	updateItem.SetService(kc.ServiceName)
+	updateItem.SetAccount(conn.Host)
+	updateItem.SetLabel(conn.User)
+	updateItem.SetAccessGroup(kc.AccessGroup)
 
 	if cmd.Flag("name").Changed {
 		conn.Name = name
