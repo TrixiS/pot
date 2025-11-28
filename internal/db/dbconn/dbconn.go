@@ -34,10 +34,3 @@ func New() *storm.DB {
 
 	return db
 }
-
-func With(f func(db *storm.DB) error) error {
-	db := New()
-	err := f(db)
-	db.Close()
-	return err
-}

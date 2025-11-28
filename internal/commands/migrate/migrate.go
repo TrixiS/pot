@@ -1,22 +1,17 @@
-package cmd
+package migrate
 
 import (
 	"fmt"
 
 	"github.com/TrixiS/pot/internal/db/dbconn"
 	"github.com/TrixiS/pot/internal/db/models"
+	"github.com/TrixiS/pot/internal/kc"
 	"github.com/asdine/storm/v3"
 	"github.com/keybase/go-keychain"
 	"github.com/spf13/cobra"
 )
 
-var importCmd = &cobra.Command{
-	Use:   "import",
-	Short: "Import mantra connection database",
-	RunE:  runImport,
-	Args:  cobra.ExactArgs(1),
-}
-
+// Mantra db connection struct
 type Connection struct {
 	ID       int    `storm:"id,increment" json:"id"`
 	Name     string `storm:"index"        json:"name"`
@@ -27,23 +22,33 @@ type Connection struct {
 	Args     string `                     json:"args"`
 }
 
-func runImport(cmd *cobra.Command, args []string) error {
+func NewCommand() *cobra.Command {
+	migrateCmd := &cobra.Command{
+		Use:   "migrate",
+		Short: "Migrate from mantra database file",
+		RunE:  runMigrate,
+		Args:  cobra.ExactArgs(1),
+	}
+
+	return migrateCmd
+}
+
+func runMigrate(cmd *cobra.Command, args []string) error {
 	mantraDB, err := storm.Open(args[0])
 
 	if err != nil {
 		return err
 	}
 
-	defer mantraDB.Close()
-
 	connections := []Connection{}
+	err = mantraDB.All(&connections)
+	mantraDB.Close()
 
-	if err := mantraDB.All(&connections); err != nil {
+	if err != nil {
 		return err
 	}
 
 	db := dbconn.New()
-	defer db.Close()
 
 	for _, conn := range connections {
 		db.Save(&models.Connection{
@@ -55,11 +60,11 @@ func runImport(cmd *cobra.Command, args []string) error {
 		})
 
 		item := keychain.NewGenericPassword(
-			PotServiceName,
+			kc.ServiceName,
 			conn.Host,
 			conn.User,
 			[]byte(conn.Password),
-			PotAccessGroup,
+			kc.AccessGroup,
 		)
 
 		err := keychain.AddItem(item)
@@ -71,9 +76,6 @@ func runImport(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	db.Close()
 	return nil
-}
-
-func init() {
-	rootCmd.AddCommand(importCmd)
 }

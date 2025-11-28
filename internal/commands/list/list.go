@@ -1,4 +1,4 @@
-package cmd
+package list
 
 import (
 	"fmt"
@@ -11,11 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listCmd = &cobra.Command{
-	Use:     "list",
-	Aliases: []string{"ls"},
-	Short:   "List connections",
-	RunE:    runList,
+func NewCommand() *cobra.Command {
+	listCmd := &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List connections",
+		RunE:    runList,
+	}
+
+	return listCmd
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -51,8 +55,4 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	t.Render()
 	return nil
-}
-
-func init() {
-	rootCmd.AddCommand(listCmd)
 }

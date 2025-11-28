@@ -1,4 +1,4 @@
-package cmd
+package connect
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/TrixiS/pot/internal/db/dbconn"
 	"github.com/TrixiS/pot/internal/db/models"
+	"github.com/TrixiS/pot/internal/kc"
 	"github.com/asdine/storm/v3"
 	"github.com/keybase/go-keychain"
 	"github.com/spf13/cobra"
@@ -14,18 +15,22 @@ import (
 	"golang.org/x/term"
 )
 
-var connectCmd = &cobra.Command{
-	Use:     "connect",
-	Aliases: []string{"conn", "c"},
-	Short:   "Make an SSH connection",
-	RunE:    runConnect,
-	Args:    cobra.ExactArgs(1),
-}
-
 var termModes = ssh.TerminalModes{
 	ssh.ECHO:          1,
 	ssh.TTY_OP_ISPEED: 14400,
 	ssh.TTY_OP_OSPEED: 14400,
+}
+
+func NewCommand() *cobra.Command {
+	connectCmd := &cobra.Command{
+		Use:     "connect",
+		Aliases: []string{"conn", "c"},
+		Short:   "Make an SSH connection",
+		Args:    cobra.ExactArgs(1),
+		RunE:    runConnect,
+	}
+
+	return connectCmd
 }
 
 func runConnect(cmd *cobra.Command, args []string) error {
@@ -38,10 +43,10 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	}
 
 	passwordBytes, err := keychain.GetGenericPassword(
-		PotServiceName,
+		kc.ServiceName,
 		conn.Host,
 		conn.User,
-		PotAccessGroup,
+		kc.AccessGroup,
 	)
 
 	if err != nil {
@@ -110,8 +115,4 @@ func getConnectionByIDString(db *storm.DB, idString string) (*models.Connection,
 	}
 
 	return &conn, db.One("Name", idString, &conn)
-}
-
-func init() {
-	rootCmd.AddCommand(connectCmd)
 }
