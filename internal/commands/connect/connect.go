@@ -17,6 +17,8 @@ import (
 
 var termModes = ssh.TerminalModes{
 	ssh.ECHO:          1,
+	ssh.ICANON:        1,
+	ssh.OPOST:         1,
 	ssh.TTY_OP_ISPEED: 14400,
 	ssh.TTY_OP_OSPEED: 14400,
 }
@@ -92,7 +94,7 @@ func runConnect(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := session.RequestPty("xterm-256color", termW, termH, termModes); err != nil {
+	if err := session.RequestPty("xterm-256color", termH, termW, termModes); err != nil {
 		return err
 	}
 
