@@ -37,41 +37,22 @@ func NewCommand() *cobra.Command {
 
 func runConnect(cmd *cobra.Command, args []string) error {
 	db := dbconn.New()
-	conn, err := getConnectionByIDString(db, args[0])
+	conn, err := GetConnectionByIDString(db, args[0])
 	db.Close()
 
 	if err != nil {
 		return err
 	}
 
-	passwordBytes, err := keychain.GetGenericPassword(
-		kc.ServiceName,
-		conn.Host,
-		conn.User,
-		kc.AccessGroup,
-	)
+	sshConn, err := DialSSH(conn)
 
 	if err != nil {
 		return err
 	}
 
-	config := ssh.ClientConfig{
-		User: conn.User,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(string(passwordBytes)),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
+	defer sshConn.Close()
 
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", conn.Host, conn.Port), &config)
-
-	if err != nil {
-		return err
-	}
-
-	defer client.Close()
-
-	session, err := client.NewSession()
+	session, err := sshConn.NewSession()
 
 	if err != nil {
 		return err
@@ -109,7 +90,7 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	return session.Wait()
 }
 
-func getConnectionByIDString(db *storm.DB, idString string) (*models.Connection, error) {
+func GetConnectionByIDString(db *storm.DB, idString string) (*models.Connection, error) {
 	conn := models.Connection{}
 
 	if id, err := strconv.Atoi(idString); err == nil {
@@ -117,4 +98,27 @@ func getConnectionByIDString(db *storm.DB, idString string) (*models.Connection,
 	}
 
 	return &conn, db.One("Name", idString, &conn)
+}
+
+func DialSSH(conn *models.Connection) (*ssh.Client, error) {
+	passwordBytes, err := keychain.GetGenericPassword(
+		kc.ServiceName,
+		conn.Host,
+		conn.User,
+		kc.AccessGroup,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	config := ssh.ClientConfig{
+		User: conn.User,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(string(passwordBytes)),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	return ssh.Dial("tcp", fmt.Sprintf("%s:%d", conn.Host, conn.Port), &config)
 }

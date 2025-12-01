@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/TrixiS/pot/internal/commands/add"
 	"github.com/TrixiS/pot/internal/commands/connect"
+	"github.com/TrixiS/pot/internal/commands/ftp"
 	"github.com/TrixiS/pot/internal/commands/list"
 	"github.com/TrixiS/pot/internal/commands/migrate"
 	"github.com/TrixiS/pot/internal/commands/remove"
@@ -22,6 +23,7 @@ func main() {
 	rootCmd.AddCommand(update.NewCommand())
 	rootCmd.AddCommand(connect.NewCommand())
 	rootCmd.AddCommand(migrate.NewCommand())
+	rootCmd.AddCommand(ftp.NewCommand())
 
 	rootCmd.Execute()
 }
