@@ -33,15 +33,15 @@ func NewCommand() *cobra.Command {
 }
 
 type FSView struct {
-	listView *tview.List
-	textView *tview.TextView
-	fs       FS
-	cwd      string
-	entries  []DirEntry
+	listView  *tview.List
+	pathInput *tview.InputField
+	fs        FS
+	cwd       string
+	entries   []DirEntry
 }
 
-func (f *FSView) enterDir(p string) {
-	f.cwd = path.Join(f.cwd, p)
+func (f *FSView) enterDir(dirpath string) {
+	f.cwd = dirpath
 	f.entries = nil
 
 	for entry := range f.fs.Walk(f.cwd, false) {
@@ -61,7 +61,7 @@ func (f FSView) update() {
 		f.listView.SetCurrentItem(idx)
 	}
 
-	f.textView.SetText(f.cwd)
+	f.pathInput.SetText(f.cwd)
 }
 
 func newFSView(fs FS) *FSView {
@@ -72,20 +72,38 @@ func newFSView(fs FS) *FSView {
 	}
 
 	listView := tview.NewList().ShowSecondaryText(false)
-	textView := tview.NewTextView()
 
-	view := &FSView{listView: listView, textView: textView, fs: fs, cwd: cwd}
+	pathInput := tview.NewInputField()
+	pathInput.SetFieldBackgroundColor(tcell.ColorNone)
+
+	view := &FSView{listView: listView, pathInput: pathInput, fs: fs, cwd: cwd}
+
+	pathInput.SetDoneFunc(func(key tcell.Key) {
+		if key != tcell.KeyEnter {
+			return
+		}
+
+		dirpath := pathInput.GetText()
+		info, err := view.fs.Stat(dirpath)
+
+		if err != nil || !info.IsDir() {
+			return
+		}
+
+		view.enterDir(dirpath)
+		view.update()
+	})
 
 	listView.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		entry := view.entries[i]
 
 		if entry.Info.IsDir() {
-			view.enterDir(entry.Info.Name())
+			view.enterDir(path.Join(view.cwd, entry.Info.Name()))
 			view.update()
 		}
 	})
 
-	view.enterDir(".")
+	view.enterDir(cwd)
 	view.update()
 	return view
 }
@@ -99,7 +117,7 @@ func makeFileViewInputCapture(
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case BackRune:
-			currentFSView.enterDir("..")
+			currentFSView.enterDir(path.Join(currentFSView.cwd, ".."))
 			currentFSView.update()
 		case MoveRune:
 			entry := currentFSView.entries[currentFSView.listView.GetCurrentItem()]
@@ -147,16 +165,16 @@ func makeFileViewInputCapture(
 				}
 			}
 
-			otherFSView.enterDir(".")
+			otherFSView.enterDir(otherFSView.cwd)
 			otherFSView.update()
 		case DeleteRune:
 			itemIdx := currentFSView.listView.GetCurrentItem()
 			entry := currentFSView.entries[itemIdx]
 			currentFSView.fs.Remove(path.Join(currentFSView.cwd, entry.Info.Name()))
-			currentFSView.enterDir(".")
+			currentFSView.enterDir(currentFSView.cwd)
 			currentFSView.update()
 		case RefreshRune:
-			currentFSView.enterDir(".")
+			currentFSView.enterDir(currentFSView.cwd)
 			currentFSView.update()
 		default:
 			return event
@@ -205,8 +223,8 @@ func runFtp(cmd *cobra.Command, args []string) error {
 	grid := tview.NewGrid().
 		SetRows(1, 2).
 		SetBorders(true).
-		AddItem(remoteFSView.textView, 1, 0, 1, 1, 0, 0, false).
-		AddItem(localFSView.textView, 1, 1, 1, 1, 0, 0, false).
+		AddItem(remoteFSView.pathInput, 1, 0, 1, 1, 0, 0, false).
+		AddItem(localFSView.pathInput, 1, 1, 1, 1, 0, 0, false).
 		AddItem(remoteFSView.listView, 2, 0, 1, 1, 0, 0, true).
 		AddItem(localFSView.listView, 2, 1, 1, 1, 0, 0, false)
 

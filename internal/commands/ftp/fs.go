@@ -24,6 +24,7 @@ type FS interface {
 	Open(string, int) (io.ReadWriteCloser, error)
 	Mkdir(string) error
 	Remove(string) error
+	Stat(string) (os.FileInfo, error)
 }
 
 type LocalFS struct {
@@ -35,6 +36,10 @@ func (fs LocalFS) Getwd() (string, error) {
 
 func (fs LocalFS) Mkdir(p string) error {
 	return os.Mkdir(p, 0o770)
+}
+
+func (fs LocalFS) Stat(p string) (os.FileInfo, error) {
+	return os.Stat(p)
 }
 
 func (fs LocalFS) Walk(p string, r bool) func(func(DirEntry) bool) {
@@ -123,4 +128,8 @@ func (fs SftpFS) Remove(p string) error {
 
 func (fs SftpFS) Mkdir(p string) error {
 	return fs.client.Mkdir(p)
+}
+
+func (fs SftpFS) Stat(p string) (os.FileInfo, error) {
+	return fs.client.Stat(p)
 }
