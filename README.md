@@ -1,6 +1,8 @@
 # pot
 
-`go install github.com/TrixiS/pot`
+```shell
+go install github.com/TrixiS/pot
+```
 
 ```bash
 SSH tool
