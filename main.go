@@ -7,6 +7,7 @@ import (
 	"github.com/TrixiS/pot/internal/commands/list"
 	"github.com/TrixiS/pot/internal/commands/migrate"
 	"github.com/TrixiS/pot/internal/commands/remove"
+	"github.com/TrixiS/pot/internal/commands/reveal"
 	"github.com/TrixiS/pot/internal/commands/update"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +25,7 @@ func main() {
 	rootCmd.AddCommand(connect.NewCommand())
 	rootCmd.AddCommand(migrate.NewCommand())
 	rootCmd.AddCommand(ftp.NewCommand())
+	rootCmd.AddCommand(reveal.NewCommand())
 
 	rootCmd.Execute()
 }

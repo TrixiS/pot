@@ -51,9 +51,9 @@ func (fs LocalFS) Walk(p string, r bool) func(func(DirEntry) bool) {
 		}
 
 		for _, file := range files {
-			walkFile := DirEntry{Path: path.Join(p, file.Name()), Info: file}
+			dirEntry := DirEntry{Path: path.Join(p, file.Name()), Info: file}
 
-			if !yield(walkFile) {
+			if !yield(dirEntry) {
 				return
 			}
 
@@ -63,8 +63,8 @@ func (fs LocalFS) Walk(p string, r bool) func(func(DirEntry) bool) {
 
 			dirpath := path.Join(p, file.Name())
 
-			for file := range fs.Walk(dirpath, r) {
-				if !yield(file) {
+			for entry := range fs.Walk(dirpath, r) {
+				if !yield(entry) {
 					return
 				}
 			}
@@ -97,9 +97,9 @@ func (fs SftpFS) Walk(p string, r bool) func(func(DirEntry) bool) {
 		}
 
 		for _, file := range files {
-			walkFile := DirEntry{Path: path.Join(p, file.Name()), Info: file}
+			dirEntry := DirEntry{Path: path.Join(p, file.Name()), Info: file}
 
-			if !yield(walkFile) {
+			if !yield(dirEntry) {
 				return
 			}
 
@@ -109,8 +109,8 @@ func (fs SftpFS) Walk(p string, r bool) func(func(DirEntry) bool) {
 
 			dirpath := path.Join(p, file.Name())
 
-			for file := range fs.Walk(dirpath, r) {
-				if !yield(file) {
+			for entry := range fs.Walk(dirpath, r) {
+				if !yield(entry) {
 					return
 				}
 			}

@@ -57,7 +57,7 @@ func (f FSView) update() {
 		f.listView.AddItem(entry.Info.Name(), "", 0, nil)
 	}
 
-	if idx < f.listView.GetItemCount() {
+	if idx < len(f.entries) {
 		f.listView.SetCurrentItem(idx)
 	}
 

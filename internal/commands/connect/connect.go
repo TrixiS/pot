@@ -100,7 +100,7 @@ func GetConnectionByIDString(db *storm.DB, idString string) (*models.Connection,
 	return &conn, db.One("Name", idString, &conn)
 }
 
-func DialSSH(conn *models.Connection) (*ssh.Client, error) {
+func GetConnectionPassword(conn *models.Connection) (string, error) {
 	passwordBytes, err := keychain.GetGenericPassword(
 		kc.ServiceName,
 		conn.Host,
@@ -109,14 +109,22 @@ func DialSSH(conn *models.Connection) (*ssh.Client, error) {
 	)
 
 	if err != nil {
+		return "", err
+	}
+
+	return string(passwordBytes), nil
+}
+
+func DialSSH(conn *models.Connection) (*ssh.Client, error) {
+	password, err := GetConnectionPassword(conn)
+
+	if err != nil {
 		return nil, err
 	}
 
 	config := ssh.ClientConfig{
-		User: conn.User,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(string(passwordBytes)),
-		},
+		User:            conn.User,
+		Auth:            []ssh.AuthMethod{ssh.Password(password)},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
