@@ -27,14 +27,12 @@ func NewCommand() *cobra.Command {
 
 	addCmd.Flags().StringVarP(&name, "name", "", "", "Name")
 	addCmd.Flags().StringVarP(&host, "host", "", "", "Host")
-	addCmd.Flags().StringVarP(&user, "user", "", "", "User")
-	addCmd.Flags().Uint16VarP(&port, "port", "", 0, "Port")
+	addCmd.Flags().StringVarP(&user, "user", "", "root", "User")
+	addCmd.Flags().Uint16VarP(&port, "port", "", 22, "Port")
 	addCmd.Flags().StringVarP(&password, "password", "", "", "Password")
 
 	addCmd.MarkFlagRequired("name")
 	addCmd.MarkFlagRequired("host")
-	addCmd.MarkFlagRequired("user")
-	addCmd.MarkFlagRequired("port")
 	addCmd.MarkFlagRequired("password")
 
 	return addCmd
