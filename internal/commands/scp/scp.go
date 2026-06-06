@@ -36,9 +36,13 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scp",
 		Short: "SCP file transfer",
-		Long: `pot scp <connection_id> 'local:hello.txt -> remote:/home/uploaded_hello.txt'
-pot scp <connection_id> 'remote:/home/uploaded.txt -> local:downloaded.txt'`,
-		Args: cobra.MinimumNArgs(2),
+		Long: `
+Uploading
+pot scp <connection_id> local:hello.txt remote:/home/uploaded_hello.txt
+
+Downloading
+pot scp <connection_id> remote:/home/uploaded.txt local:downloaded.txt`,
+		Args: cobra.MinimumNArgs(3),
 		RunE: runSCP,
 	}
 
@@ -46,6 +50,10 @@ pot scp <connection_id> 'remote:/home/uploaded.txt -> local:downloaded.txt'`,
 }
 
 func runSCP(cmd *cobra.Command, args []string) error {
+	if (len(args)-1)%2 != 0 {
+		return errors.New("expected an even number of filepath pairs")
+	}
+
 	db := dbconn.New()
 	conn, err := connect.GetConnectionByIDString(db, args[0])
 	db.Close()
@@ -72,12 +80,11 @@ func runSCP(cmd *cobra.Command, args []string) error {
 
 	wg := &sync.WaitGroup{}
 
-	for i := 1; i < len(args); i++ {
-		transferString := args[i]
-		transfer, err := parseFileTransfer(transferString)
+	for i := 1; i < len(args)-1; i += 2 {
+		transfer, err := parseTransferPair(args[i], args[i+1])
 
 		if err != nil {
-			fmt.Println(transferString, err)
+			fmt.Println(err)
 			continue
 		}
 
@@ -167,56 +174,38 @@ func downloadFile(sftpClient *sftp.Client, remotePath string, localPath string) 
 	return nil
 }
 
-var (
-	errNoArrow       = errors.New("'->' separator not found")
-	errInvalidPrefix = errors.New("must use 'local:' and 'remote:' prefixes on opposite sides")
-)
-
-func parseFileTransfer(input string) (transfer FileTransfer, _err error) {
+func parseTransferPair(arg1 string, arg2 string) (t FileTransfer, _err error) {
 	const (
 		localPrefix  = "local:"
 		remotePrefix = "remote:"
-		arrow        = "->"
 	)
 
-	idx := strings.Index(input, arrow)
+	if strings.HasPrefix(arg1, remotePrefix) {
+		if !strings.HasPrefix(arg2, localPrefix) {
+			return t, fmt.Errorf(
+				"expected local:filepath after remote for download, got '%s'", arg2,
+			)
+		}
 
-	if idx == -1 {
-		return transfer, errNoArrow
+		t.remotePath = arg1[len(remotePrefix):]
+		t.localPath = arg2[len(localPrefix):]
+		t.direction = DirectionDownload
+		return
 	}
 
-	s1, e1 := trimIndices(input, 0, idx)
-	s2, e2 := trimIndices(input, idx+len(arrow), len(input))
+	if strings.HasPrefix(arg1, localPrefix) {
+		if !strings.HasPrefix(arg2, remotePrefix) {
+			return t, fmt.Errorf("expected remote:filepath after local for upload, got '%s'", arg2)
+		}
 
-	part1 := input[s1:e1]
-	part2 := input[s2:e2]
-
-	if strings.HasPrefix(part1, localPrefix) && strings.HasPrefix(part2, remotePrefix) {
-		transfer.localPath = part1[len(localPrefix):]
-		transfer.remotePath = part2[len(remotePrefix):]
-		transfer.direction = DirectionUpload
-	} else if strings.HasPrefix(part1, remotePrefix) && strings.HasPrefix(part2, localPrefix) {
-		transfer.localPath = part2[len(localPrefix):]
-		transfer.remotePath = part1[len(remotePrefix):]
-		transfer.direction = DirectionDownload
-	} else {
-		return transfer, errInvalidPrefix
+		t.localPath = arg1[len(localPrefix):]
+		t.remotePath = arg2[len(remotePrefix):]
+		t.direction = DirectionUpload
+		return
 	}
 
-	transfer.localPath = strings.TrimSpace(transfer.localPath)
-	transfer.remotePath = strings.TrimSpace(transfer.remotePath)
-
-	return transfer, nil
-}
-
-func trimIndices(s string, start int, end int) (int, int) {
-	for start < end && s[start] <= ' ' {
-		start++
-	}
-
-	for end > start && s[end-1] <= ' ' {
-		end--
-	}
-
-	return start, end
+	return t, fmt.Errorf(
+		"expected '%s' or '%s' prefix before filepath, got '%s'",
+		localPrefix, remotePrefix, arg1,
+	)
 }
