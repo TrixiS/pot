@@ -5,6 +5,7 @@ import (
 
 	"github.com/TrixiS/pot/internal/commands/connect"
 	"github.com/TrixiS/pot/internal/db/dbconn"
+	"github.com/TrixiS/pot/internal/kc"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ func runReveal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	password, err := connect.GetConnectionPassword(conn)
+	password, err := kc.GetPassword(conn.Host, conn.User)
 
 	if err != nil {
 		return err

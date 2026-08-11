@@ -9,7 +9,6 @@ import (
 	"github.com/TrixiS/pot/internal/db/models"
 	"github.com/TrixiS/pot/internal/kc"
 	"github.com/asdine/storm/v3"
-	"github.com/keybase/go-keychain"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -100,23 +99,8 @@ func GetConnectionByIDString(db *storm.DB, idString string) (*models.Connection,
 	return &conn, db.One("Name", idString, &conn)
 }
 
-func GetConnectionPassword(conn *models.Connection) (string, error) {
-	passwordBytes, err := keychain.GetGenericPassword(
-		kc.ServiceName,
-		conn.Host,
-		conn.User,
-		kc.AccessGroup,
-	)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(passwordBytes), nil
-}
-
 func DialSSH(conn *models.Connection) (*ssh.Client, error) {
-	password, err := GetConnectionPassword(conn)
+	password, err := kc.GetPassword(conn.Host, conn.User)
 
 	if err != nil {
 		return nil, err

@@ -2,16 +2,12 @@ package remove
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/TrixiS/pot/internal/db/dbconn"
 	"github.com/TrixiS/pot/internal/db/models"
 	"github.com/TrixiS/pot/internal/kc"
-	"github.com/keybase/go-keychain"
 	"github.com/spf13/cobra"
-)
-
-var (
-	id int
 )
 
 func NewCommand() *cobra.Command {
@@ -19,30 +15,48 @@ func NewCommand() *cobra.Command {
 		Use:     "remove",
 		Aliases: []string{"rm"},
 		Short:   "Remove a connection",
+		Args:    cobra.ExactArgs(1),
 		RunE:    runRemove,
 	}
-
-	removeCmd.Flags().IntVarP(&id, "id", "", 0, "Connection ID")
-	removeCmd.MarkFlagRequired("id")
 
 	return removeCmd
 }
 
 func runRemove(cmd *cobra.Command, args []string) error {
-	conn := models.Connection{}
+	id, err := strconv.Atoi(args[0])
+
+	if err != nil {
+		return err
+	}
 
 	db := dbconn.New()
 	defer db.Close()
+
+	tx, err := db.Begin(true)
+
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	conn := models.Connection{}
 
 	if err := db.One("ID", id, &conn); err != nil {
 		return err
 	}
 
-	if err := db.DeleteStruct(&conn); err != nil {
+	if err := tx.DeleteStruct(&conn); err != nil {
 		return err
 	}
 
-	keychain.DeleteGenericPasswordItem(kc.ServiceName, conn.Host)
+	if err := kc.DeletePassword(conn.Host); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 
 	fmt.Printf("Connection %s (%d) has been removed\n", conn.Name, conn.ID)
 	return nil

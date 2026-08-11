@@ -6,7 +6,6 @@ import (
 	"github.com/TrixiS/pot/internal/db/dbconn"
 	"github.com/TrixiS/pot/internal/db/models"
 	"github.com/TrixiS/pot/internal/kc"
-	"github.com/keybase/go-keychain"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +30,6 @@ func NewCommand() *cobra.Command {
 	updateCmd.MarkFlagRequired("id")
 
 	updateCmd.Flags().StringVarP(&name, "name", "", "", "Name")
-	updateCmd.Flags().StringVarP(&host, "host", "", "", "Host")
 	updateCmd.Flags().StringVarP(&user, "user", "", "", "User")
 	updateCmd.Flags().Uint16VarP(&port, "port", "", 0, "Port")
 	updateCmd.Flags().StringVarP(&password, "password", "", "", "Password")
@@ -49,20 +47,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	queryItem := keychain.NewItem()
-	queryItem.SetSecClass(keychain.SecClassGenericPassword)
-	queryItem.SetService(kc.ServiceName)
-	queryItem.SetAccount(conn.Host)
-	queryItem.SetLabel(conn.User)
-	queryItem.SetAccessGroup(kc.AccessGroup)
-	queryItem.SetReturnData(true)
+	currentPassword, err := kc.GetPassword(conn.Host, conn.User)
 
-	updateItem := keychain.NewItem()
-	updateItem.SetSecClass(keychain.SecClassGenericPassword)
-	updateItem.SetService(kc.ServiceName)
-	updateItem.SetAccount(conn.Host)
-	updateItem.SetLabel(conn.User)
-	updateItem.SetAccessGroup(kc.AccessGroup)
+	if err != nil {
+		return err
+	}
 
 	if cmd.Flag("name").Changed {
 		conn.Name = name
@@ -70,12 +59,10 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	if cmd.Flag("host").Changed {
 		conn.Host = host
-		updateItem.SetAccount(host)
 	}
 
 	if cmd.Flag("user").Changed {
 		conn.User = user
-		updateItem.SetLabel(user)
 	}
 
 	if cmd.Flag("port").Changed {
@@ -83,7 +70,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	if cmd.Flag("password").Changed {
-		updateItem.SetData([]byte(password))
+		currentPassword = password
 	}
 
 	tx, err := db.Begin(true)
@@ -98,7 +85,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := keychain.UpdateItem(queryItem, updateItem); err != nil {
+	if err := kc.AddPassword(host, user, currentPassword); err != nil {
 		return err
 	}
 

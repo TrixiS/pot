@@ -5,7 +5,6 @@ import (
 	"github.com/TrixiS/pot/internal/commands/connect"
 	"github.com/TrixiS/pot/internal/commands/ftp"
 	"github.com/TrixiS/pot/internal/commands/list"
-	"github.com/TrixiS/pot/internal/commands/migrate"
 	"github.com/TrixiS/pot/internal/commands/remove"
 	"github.com/TrixiS/pot/internal/commands/reveal"
 	"github.com/TrixiS/pot/internal/commands/run"
@@ -26,7 +25,6 @@ func main() {
 	rootCmd.AddCommand(list.NewCommand())
 	rootCmd.AddCommand(update.NewCommand())
 	rootCmd.AddCommand(connect.NewCommand())
-	rootCmd.AddCommand(migrate.NewCommand())
 	rootCmd.AddCommand(ftp.NewCommand())
 	rootCmd.AddCommand(reveal.NewCommand())
 	rootCmd.AddCommand(tunnel.NewCommand())

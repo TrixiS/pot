@@ -6,7 +6,6 @@ import (
 	"github.com/TrixiS/pot/internal/db/dbconn"
 	"github.com/TrixiS/pot/internal/db/models"
 	"github.com/TrixiS/pot/internal/kc"
-	"github.com/keybase/go-keychain"
 	"github.com/spf13/cobra"
 )
 
@@ -39,15 +38,7 @@ func NewCommand() *cobra.Command {
 }
 
 func runAdd(cmd *cobra.Command, args []string) error {
-	item := keychain.NewGenericPassword(
-		kc.ServiceName,
-		host,
-		user,
-		[]byte(password),
-		kc.AccessGroup,
-	)
-
-	if err := keychain.AddItem(item); err != nil {
+	if err := kc.AddPassword(host, user, password); err != nil {
 		return err
 	}
 

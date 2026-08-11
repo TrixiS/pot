@@ -6,7 +6,6 @@ require (
 	github.com/asdine/storm/v3 v3.2.1
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/jedib0t/go-pretty/v6 v6.7.5
-	github.com/keybase/go-keychain v0.0.1
 	github.com/pkg/sftp v1.13.10
 	github.com/rivo/tview v0.42.0
 	github.com/spf13/cobra v1.10.1
